@@ -11,6 +11,8 @@ import { PageHeader, Pill, QueryState, Section, Segmented, SkeletonBlock, Update
 import { type Evidence, EvidenceLine, won } from "@/components/stock/dart-panel";
 import { api } from "@/lib/api";
 import { isNum } from "@/lib/format";
+import { openStock } from "@/lib/static";
+import { toast } from "sonner";
 
 type N = number | null;
 interface Row {
@@ -87,7 +89,7 @@ function PbrRoeMap({ rows }: { rows: Row[] }) {
           <circle key={r.code} cx={lx(r.pbr as number)} cy={ly(r.roe as number)} r={r.low_pbr ? 3.6 : r.vu?.last_plan ? 3 : 2.1}
             className={cn("cursor-pointer", r.low_pbr ? "fill-down" : r.vu?.last_plan ? "fill-gold" : "fill-muted-foreground/35")}
             opacity={r.low_pbr ? 0.9 : r.vu?.last_plan ? 0.8 : 1}
-            onMouseEnter={() => setHover(r)} onMouseLeave={() => setHover(null)} onClick={() => router.push(`/stock/${encodeURIComponent(r.symbol)}`)} />
+            onMouseEnter={() => setHover(r)} onMouseLeave={() => setHover(null)} onClick={() => openStock(router.push, r.symbol, (t, d) => toast(t, { description: d }))} />
         ))}
       </svg>
       {hover && (

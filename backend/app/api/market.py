@@ -17,7 +17,7 @@ from ..providers.fred import fred
 from ..providers.news import finnhub
 from ..security import current_user
 from ..services import (briefing, dart_fin, fear_greed, fedwatch, macro, market, news, recap, recommendations, settings_store,
-                       thirteenf, trend_flow, universe, valueup)
+                       leading_study, risk_signals, thirteenf, trend_flow, universe, valueup)
 from ..services.symbols import index
 from ..cache import cache, cached
 from .common import guard
@@ -143,6 +143,24 @@ def api_market_breadth():
 @router.get("/market/correlation")
 def api_market_correlation(window: Literal["30d", "90d", "1y", "3y"] = "90d"):
     return guard(lambda: market.correlation(window), "correlation")
+
+
+@router.get("/market/risk/credit")
+def api_risk_credit(threshold: float = Query(7.8, ge=1, le=30)):
+    """하이일드 CCC - B 스프레드: 기준선 돌파일과 그 뒤 S&P 500 하락."""
+    return guard(lambda: risk_signals.credit(round(threshold, 2)), "credit spreads")
+
+
+@router.get("/market/risk/correlation")
+def api_risk_correlation():
+    """시장 상관관계 (Cboe 내재 상관, 섹터 실현 상관)와 S&P 500 하락 구간."""
+    return guard(risk_signals.correlation, "market correlation")
+
+
+@router.get("/market/risk/leading")
+def api_risk_leading():
+    """선행지표 검증: 27개 규칙이 S&P 500 10% 이상 하락 전에 켜져 있었는지."""
+    return guard(leading_study.study, "leading indicators")
 
 
 # ------------------------------------------------------------------- macro

@@ -14,3 +14,7 @@ var/
 *.pkl
 .env.*
 !.env.example
+portfolio-site/
+frontend/public/snapshot/
+frontend/out/
+frontend/out-static/

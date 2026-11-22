@@ -543,5 +543,44 @@ class DartFinancial(Base):
     __table_args__ = (UniqueConstraint("corp_code", "year", "reprt", "kind", name="uq_dart_fin_period"),)
 
 
+
+# ------------------------------------------------------------- strategy lab
+class CustomStrategy(Base):
+    """A user-built entry/exit rule set (analysis/builder.py spec), saved under a name."""
+    __tablename__ = "custom_strategies"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(80))
+    spec: Mapped[dict] = mapped_column(JSONType, default=dict)
+    note: Mapped[str | None] = mapped_column(String(300))
+    created_at: Mapped[dt.datetime] = mapped_column(UTCDateTime(), default=utcnow)
+    updated_at: Mapped[dt.datetime] = mapped_column(UTCDateTime(), default=utcnow, onupdate=utcnow)
+    __table_args__ = (UniqueConstraint("user_id", "name", name="uq_custom_strategy_user_name"),)
+
+
+class TradeJournal(Base):
+    """A trade the user actually made, written down by hand (never an order): which signal, at what price, how it ended."""
+    __tablename__ = "trade_journal"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    symbol: Mapped[str] = mapped_column(String(24))
+    name: Mapped[str | None] = mapped_column(String(120))
+    currency: Mapped[str | None] = mapped_column(String(8))
+    strategy: Mapped[str] = mapped_column(String(80), default="")
+    signal: Mapped[str | None] = mapped_column(String(300))
+    followed: Mapped[bool] = mapped_column(Boolean, default=True)
+    entry_date: Mapped[dt.date] = mapped_column(Date)
+    entry_price: Mapped[float] = mapped_column(Float)
+    quantity: Mapped[float] = mapped_column(Float)
+    stop_price: Mapped[float | None] = mapped_column(Float)
+    target_price: Mapped[float | None] = mapped_column(Float)
+    exit_date: Mapped[dt.date | None] = mapped_column(Date)
+    exit_price: Mapped[float | None] = mapped_column(Float)
+    fees: Mapped[float] = mapped_column(Float, default=0.0)
+    note: Mapped[str | None] = mapped_column(String(1000))
+    created_at: Mapped[dt.datetime] = mapped_column(UTCDateTime(), default=utcnow)
+    updated_at: Mapped[dt.datetime] = mapped_column(UTCDateTime(), default=utcnow, onupdate=utcnow)
+
+
 Index("ix_signals_symbol_asof", Signal.symbol, Signal.as_of.desc())
 Index("ix_news_scope_published", News.scope, News.published_at.desc())

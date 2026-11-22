@@ -10,9 +10,19 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 // Display serif for the wordmark and hero numbers only; body text is Pretendard (Korean + Latin).
 const display = Instrument_Serif({ variable: "--font-instrument-serif", subsets: ["latin"], weight: "400", style: ["normal", "italic"] });
 
+const DESCRIPTION = "미국·한국 주식의 매크로, 뉴스, 기술적 분석과 과거 패턴 검증을 한곳에서.";
+// Link previews (the thumbnail a shared link shows) only apply to the public demo - the local app has no public address.
+const DEMO_URL = `${process.env.NEXT_PUBLIC_SITE_ORIGIN ?? "https://ahnhs4.github.io"}${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}`;
+const PREVIEW = { title: "MarketLens — 미국·한국 주식 리서치 터미널", description: DESCRIPTION };
+
 export const metadata: Metadata = {
   title: { default: "MarketLens", template: "%s · MarketLens" },
-  description: "미국·한국 주식의 매크로, 뉴스, 기술적 분석과 과거 패턴 검증을 한곳에서.",
+  description: DESCRIPTION,
+  ...(process.env.NEXT_PUBLIC_STATIC === "1" ? {
+    openGraph: { ...PREVIEW, type: "website", siteName: "MarketLens", locale: "ko_KR", url: `${DEMO_URL}/`,
+      images: [{ url: `${DEMO_URL}/og.png`, width: 1200, height: 630, alt: "MarketLens 대시보드" }] },
+    twitter: { ...PREVIEW, card: "summary_large_image", images: [`${DEMO_URL}/og.png`] },
+  } : {}),
 };
 
 export const viewport: Viewport = {

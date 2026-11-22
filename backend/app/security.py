@@ -123,4 +123,4 @@ class RateLimiter:
 
 
 limiter = RateLimiter()
-EXPENSIVE = ("/backtest", "/walk-forward", "/screener", "/portfolio/stress", "/admin/")
+EXPENSIVE = ("/backtest", "/walk-forward", "/screener", "/portfolio/stress", "/admin/", "/builder/run", "/rotation/prepare")

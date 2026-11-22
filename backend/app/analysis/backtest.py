@@ -107,8 +107,15 @@ def _adjusted(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def run_period(ind: pd.DataFrame, entry: pd.Series, exit_: pd.Series, start: pd.Timestamp, end: pd.Timestamp, *,
-               commission_bps: float = 5.0, slippage_bps: float = 5.0, initial: float = 10_000.0) -> dict:
-    """Simulate one period. `ind` must already be adjusted; signals aligned to ind.index."""
+               commission_bps: float = 5.0, slippage_bps: float = 5.0, initial: float = 10_000.0,
+               stop_loss: float | None = None, take_profit: float | None = None,
+               trailing_stop: float | None = None, max_bars: int | None = None) -> dict:
+    """Simulate one period. `ind` must already be adjusted; signals aligned to ind.index.
+
+    Optional protective exits (fractions, e.g. 0.08 = 8%) are checked at the close like every other
+    signal and filled at the next open: stop_loss / take_profit against the entry fill, trailing_stop
+    against the highest close since entry, max_bars = sessions held.
+    """
     mask = (ind.index >= start) & (ind.index <= end)
     idx = np.where(mask)[0]
     if len(idx) < 2:
@@ -121,19 +128,20 @@ def run_period(ind: pd.DataFrame, entry: pd.Series, exit_: pd.Series, start: pd.
     trades = []
     pending: str | None = None
     entry_px = entry_i = None
+    peak_c, why = 0.0, "signal"
     for i in idx:
         # 1) fill orders decided at the previous close, at today's open
         if pending == "buy" and shares == 0:
             px = o[i] * (1 + slip)
             shares = cash * (1 - cost) / px
             cash = 0.0
-            entry_px, entry_i = px, i
+            entry_px, entry_i, peak_c = px, i, px
         elif pending == "sell" and shares > 0:
             px = o[i] * (1 - slip)
             cash = shares * px * (1 - cost)
             trades.append({"entry_date": str(ind.index[entry_i].date()), "exit_date": str(ind.index[i].date()),
                            "entry_price": entry_px, "exit_price": px, "return": (px * (1 - cost)) / (entry_px / (1 - cost)) - 1,
-                           "bars": int(i - entry_i), "open": False})
+                           "bars": int(i - entry_i), "open": False, "reason": why})
             shares = 0.0
         pending = None
         # 2) mark to market at the close
@@ -143,13 +151,24 @@ def run_period(ind: pd.DataFrame, entry: pd.Series, exit_: pd.Series, start: pd.
             break
         if shares == 0 and en[i]:
             pending = "buy"
-        elif shares > 0 and ex[i]:
-            pending = "sell"
+        elif shares > 0:
+            peak_c = max(peak_c, c[i])
+            if stop_loss and c[i] <= entry_px * (1 - stop_loss):
+                pending, why = "sell", "stop_loss"
+            elif take_profit and c[i] >= entry_px * (1 + take_profit):
+                pending, why = "sell", "take_profit"
+            elif trailing_stop and c[i] <= peak_c * (1 - trailing_stop):
+                pending, why = "sell", "trailing_stop"
+            elif max_bars and i - entry_i >= max_bars:
+                pending, why = "sell", "max_hold"
+            elif ex[i]:
+                pending, why = "sell", "signal"
     if shares > 0:
         last = idx[-1]
         trades.append({"entry_date": str(ind.index[entry_i].date()), "exit_date": str(ind.index[last].date()),
                        "entry_price": entry_px, "exit_price": c[last],
-                       "return": c[last] / (entry_px / (1 - cost)) - 1, "bars": int(last - entry_i), "open": True})
+                       "return": c[last] / (entry_px / (1 - cost)) - 1, "bars": int(last - entry_i), "open": True,
+                       "reason": "open"})
     eq = pd.Series(equity, index=ind.index[idx[:len(equity)]])
     in_mkt = _exposure(eq.index, trades)
     return {"equity": eq, "trades": trades, "metrics": metrics(eq, trades, in_mkt)}

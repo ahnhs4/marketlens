@@ -12,7 +12,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
 from . import jobs
-from .api import market, stock, user
+from .api import lab, market, stock, user
 from .api import paper as paper_api
 from .config import BACKEND_DIR, get_settings
 from .security import EXPENSIVE, limiter
@@ -87,3 +87,4 @@ app.include_router(market.router)
 app.include_router(stock.router)
 app.include_router(user.router)
 app.include_router(paper_api.router)
+app.include_router(lab.router)

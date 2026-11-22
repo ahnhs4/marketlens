@@ -1,3 +1,5 @@
+import { BASE, STATIC, type Fallback, fallbacks, snapBody, snapKey, withView } from "./static";
+
 // Thin fetch wrapper. Errors carry the backend's {code, message} so sections can show
 // an accurate fallback ("Data unavailable", "Ticker not found", rate limit...).
 
@@ -39,6 +41,7 @@ async function parse(res: Response) {
 }
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
+  if (STATIC) return snapshot<T>(path, init);
   let res: Response;
   try {
     res = await fetch(path, { ...init, credentials: "same-origin", headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) } });
@@ -52,3 +55,28 @@ export const post = <T>(path: string, body?: unknown) => api<T>(path, { method: 
 export const put = <T>(path: string, body?: unknown) => api<T>(path, { method: "PUT", body: JSON.stringify(body) });
 export const patch = <T>(path: string, body?: unknown) => api<T>(path, { method: "PATCH", body: JSON.stringify(body) });
 export const del = <T>(path: string) => api<T>(path, { method: "DELETE" });
+
+/** Static demo: answer from the frozen snapshot (exact request first, then a compatible one), never the network API. */
+async function snapshot<T>(path: string, init?: RequestInit): Promise<T> {
+  const method = (init?.method ?? "GET").toUpperCase();
+  const body = snapBody(path, typeof init?.body === "string" ? init.body : null);
+  const tries: (Fallback & { body?: string | null })[] = [{ path, body }];
+  if (method === "GET") tries.push(...fallbacks(path));
+  for (const t of tries) {
+    try {
+      const res = await fetch(`${BASE}/snapshot/${snapKey(t.path, t.body)}.json`, { signal: init?.signal });
+      if (!res.ok) continue;
+      const data = await res.json();
+      const adapted = t.adapt ? t.adapt(data) : data;
+      if (t.view) {
+        const v = await fetch(`${BASE}/snapshot/${snapKey(t.view)}.json`, { signal: init?.signal });
+        if (v.ok) return withView(adapted, await v.json()) as T;
+      }
+      return adapted as T;
+    } catch (e) {
+      if ((e as Error)?.name === "AbortError") throw e;
+    }
+  }
+  if (method !== "GET") throw new ApiError(0, "static", "데모 페이지는 읽기 전용입니다 - 이 기능은 실제 앱에서만 동작합니다");
+  throw new ApiError(404, "not_found", "데모 스냅샷에 없는 데이터입니다 (Data unavailable)");
+}

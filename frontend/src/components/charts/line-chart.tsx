@@ -7,7 +7,7 @@ import { useEffect, useRef } from "react";
 /** `date`: 'YYYY-MM-DD', or unix seconds for intraday series. */
 export interface LineDef { name: string; color: string; points: { date: string | number; value: number }[]; width?: 1 | 2 | 3 }
 
-function cssVar(name: string, fb = "#888") {
+export function cssVar(name: string, fb = "#888") {
   if (typeof window === "undefined") return fb;
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fb;
 }

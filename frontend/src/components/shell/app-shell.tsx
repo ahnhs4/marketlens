@@ -2,7 +2,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "cn";
-import { Bell, Bot, BriefcaseBusiness, Building2, Columns3, FlaskConical, Globe2, Landmark, LayoutDashboard, ListFilter, Menu, Moon, Newspaper, PiggyBank, Scale, Settings, Sparkles, Star, Sun, TrendingUp } from "lucide-react";
+import { Bell, Bot, BriefcaseBusiness, Building2, Columns3, FlaskConical, Globe2, Grid3x3, Landmark, LayoutGrid, NotebookPen, LayoutDashboard, ListFilter, Menu, Moon, Newspaper, PiggyBank, Scale, Settings, ShieldAlert, Sparkles, Star, Sun, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -11,6 +11,7 @@ import { toast } from "sonner";
 
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { api } from "@/lib/api";
+import { BASE, type Manifest, PRIVATE_ROUTES, STATIC, loadManifest } from "@/lib/static";
 import type { SessionStatus } from "@/lib/types";
 
 import { SearchCommand } from "./search";
@@ -20,13 +21,16 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
   { title: "마켓", items: [
     { href: "/", label: "대시보드", icon: LayoutDashboard },
     { href: "/market", label: "시장 개요", icon: Globe2 },
+    { href: "/heatmap", label: "히트맵", icon: LayoutGrid },
     { href: "/macro", label: "매크로", icon: Landmark },
+    { href: "/risk", label: "리스크 신호", icon: ShieldAlert },
     { href: "/news", label: "뉴스", icon: Newspaper },
   ] },
   { title: "분석", items: [
     { href: "/trend", label: "추세추종", icon: TrendingUp },
     { href: "/recommendations", label: "추천 종목", icon: Sparkles },
     { href: "/screener", label: "스크리너", icon: ListFilter },
+    { href: "/matrix", label: "신호 매트릭스", icon: Grid3x3 },
     { href: "/backtest", label: "백테스트", icon: FlaskConical },
     { href: "/compare", label: "종목 비교", icon: Columns3 },
     { href: "/institutions", label: "기관 포트폴리오 (13F)", icon: Building2 },
@@ -36,6 +40,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     { href: "/watchlist", label: "관심종목", icon: Star },
     { href: "/portfolio", label: "포트폴리오", icon: BriefcaseBusiness },
     { href: "/portfolio/plan", label: "배당 · 세금 · 리밸런싱", icon: PiggyBank },
+    { href: "/journal", label: "매매 일지", icon: NotebookPen },
     { href: "/trading", label: "자동매매 (모의)", icon: Bot },
   ] },
   { title: "설정", items: [
@@ -51,7 +56,7 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
   const current = NAV.map((n) => n.href).filter((h) => (h === "/" ? path === "/" : path === h || path.startsWith(`${h}/`)))
     .sort((a, b) => b.length - a.length)[0];
   return (
-    <nav className="flex flex-col gap-5" aria-label="주 메뉴">
+    <nav className="flex flex-col gap-4" aria-label="주 메뉴">
       {NAV_GROUPS.map((g) => (
         <div key={g.title}>
           <div className="mb-1.5 px-3 text-[10.5px] font-medium tracking-[0.16em] text-muted-foreground/70">{g.title}</div>
@@ -60,7 +65,7 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
               const active = href === current;
               return (
                 <Link key={href} href={href} onClick={onNavigate} aria-current={active ? "page" : undefined}
-                  className={cn("group relative flex h-8 items-center gap-2.5 rounded-lg px-3 text-[13px] transition-colors",
+                  className={cn("group relative flex h-7 items-center gap-2.5 rounded-lg px-3 text-[13px] transition-colors",
                     active ? "bg-gradient-to-r from-gold/[0.14] via-gold/[0.05] to-transparent font-medium text-foreground"
                       : "text-muted-foreground hover:bg-accent hover:text-foreground")}>
                   {active && <span className="absolute inset-y-1.5 left-0 w-[2px] rounded-full bg-gold" aria-hidden />}
@@ -149,8 +154,51 @@ function ThemeToggle() {
   );
 }
 
+/** Static demo only: a slim bar saying what this is, with the way back to the owner's profile page. */
+function DemoBar({ asOf }: { asOf?: string }) {
+  const profile = BASE.replace(/\/[^/]*$/, "/") || "/";
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gold/25 bg-gold/[0.07] px-4 py-2 text-[12px] sm:px-8">
+      <span className="text-muted-foreground"><b className="font-semibold text-gold">MarketLens 데모</b> · {asOf ?? "—"} 기준 실데이터 스냅샷 · 읽기 전용 (실제 앱과 같은 화면)</span>
+      <a href={profile} className="rounded-full border border-gold/40 px-3 py-1 font-medium text-gold hover:bg-gold/10">← 안현수 프로필</a>
+    </div>
+  );
+}
+
+function PrivateNotice() {
+  return (
+    <div className="mx-auto mt-16 max-w-lg rounded-2xl border bg-card p-8 text-center shadow-card">
+      <div className="text-[11px] font-medium tracking-[0.18em] text-gold">PRIVATE</div>
+      <h1 className="mt-3 text-xl font-semibold">개인 데이터 화면은 데모에서 비공개입니다</h1>
+      <p className="mt-3 text-sm leading-6 text-muted-foreground">관심종목 · 포트폴리오 · 배당/세금 · 매매 일지 · 자동매매 · 알림 · 설정은 실제 계좌와 개인 설정을 다루기 때문에 공개 데모에 포함하지 않았습니다.</p>
+      <Link href="/" className="mt-5 inline-flex rounded-full border border-gold/40 px-4 py-2 text-sm font-medium text-gold hover:bg-gold/10">대시보드로</Link>
+    </div>
+  );
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [mobile, setMobile] = useState(false);
+  const path = usePathname();
+  const [man, setMan] = useState<Manifest | null>(null);
+  useEffect(() => { if (STATIC) loadManifest().then(setMan).catch(() => {}); }, []);
+  useEffect(() => {
+    if (!STATIC || !man) return;
+    // Stock links to tickers the snapshot doesn't have would land on a missing page: say so instead.
+    const have = new Set(man.tickers.map((t) => t.symbol.toUpperCase()));
+    const onClick = (e: MouseEvent) => {
+      const a = (e.target as HTMLElement)?.closest?.("a[href]") as HTMLAnchorElement | null;
+      if (!a) return;
+      const m = new URL(a.href, location.href).pathname.match(/\/stock\/([^/]+)\/?$/);
+      if (m && !have.has(decodeURIComponent(m[1]).toUpperCase())) {
+        e.preventDefault();
+        e.stopPropagation();
+        toast("데모에 없는 종목입니다", { description: `${decodeURIComponent(m[1])} - 데모에는 대표 종목 ${have.size}개만 저장돼 있습니다. 실제 앱에서는 모든 종목을 분석합니다.` });
+      }
+    };
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
+  }, [man]);
+  const isPrivate = STATIC && PRIVATE_ROUTES.some((r) => path === r || path.startsWith(`${r}/`));
   const { data: snap } = useQuery({
     queryKey: ["sessions"],
     queryFn: () => api<{ sessions: { US: SessionStatus; KR: SessionStatus } }>("/api/market/overview"),
@@ -160,7 +208,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-dvh">
       <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-border/70 bg-sidebar py-5 lg:flex">
         <Brand />
-        <div className="mt-7 min-h-0 flex-1 overflow-y-auto px-2 pb-4">
+        <div className="mt-5 min-h-0 flex-1 overflow-y-auto px-2 pb-3">
           <NavList />
         </div>
         <p className="mx-4 rounded-lg border border-border/70 bg-foreground/[0.02] px-3 py-2.5 text-[10px] leading-relaxed text-muted-foreground">
@@ -168,13 +216,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </p>
       </aside>
       <Sheet open={mobile} onOpenChange={setMobile}>
-        <SheetContent side="left" className="w-64 bg-sidebar p-0 py-5">
+        <SheetContent side="left" className="flex w-64 flex-col bg-sidebar p-0 py-5">
           <SheetTitle className="sr-only">MarketLens 메뉴</SheetTitle>
           <Brand />
-          <div className="mt-6 px-2"><NavList onNavigate={() => setMobile(false)} /></div>
+          <div className="mt-5 min-h-0 flex-1 overflow-y-auto px-2"><NavList onNavigate={() => setMobile(false)} /></div>
         </SheetContent>
       </Sheet>
       <div className="flex min-w-0 flex-1 flex-col">
+        {STATIC && <DemoBar asOf={man?.as_of} />}
         <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border/60 bg-background/70 px-4 backdrop-blur-xl backdrop-saturate-150 sm:px-8">
           <button className="grid size-9 place-items-center rounded-full border lg:hidden" onClick={() => setMobile(true)} aria-label="메뉴 열기"><Menu className="size-[18px]" /></button>
           <div className="min-w-0 flex-1"><SearchCommand /></div>
@@ -185,7 +234,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <AlertBell />
           <ThemeToggle />
         </header>
-        <main className="mx-auto w-full max-w-[1560px] flex-1 px-4 py-6 sm:px-8 sm:py-8">{children}</main>
+        <main className="mx-auto w-full max-w-[1560px] flex-1 px-4 py-6 sm:px-8 sm:py-8">{isPrivate ? <PrivateNotice /> : children}</main>
       </div>
     </div>
   );

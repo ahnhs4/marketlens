@@ -261,6 +261,18 @@ def _regime_series(symbol: str, years: int = 10):
         return None
 
 
+def _regime_breakdown(symbol: str, years: int, res: dict) -> dict | None:
+    """How the run did per rate / sentiment / risk regime; never allowed to fail the backtest itself."""
+    try:
+        from ..analysis import regime_perf
+        from ..services import regimes
+        hold = res["benchmarks"].get("단순 보유")
+        return regime_perf.breakdown(res["equity"], hold["equity"] if hold else None, res["trades"],
+                                     regimes.dimensions(symbol, years))
+    except Exception:
+        return None
+
+
 def _eq(series, step: int = 1) -> list[dict]:
     if series is None:
         return []
@@ -317,6 +329,7 @@ def api_backtest(req: BacktestRequest, user: User = Depends(current_user), db: S
                "benchmarks": {k: {"metrics": v["metrics"], "equity": _eq(v["equity"], step)} for k, v in res["benchmarks"].items()},
                "config": {"start": str(req.start), "end": str(req.end), "commission_bps": req.commission_bps,
                           "slippage_bps": req.slippage_bps},
+               "regimes": _regime_breakdown(s, years, res),
                "data": ps.meta(), "disclaimer": "과거 데이터에 대한 규칙의 성과는 미래 결과를 예측하지 않습니다."}
         db.add(Backtest(user_id=user.id, symbol=s, strategy=req.strategy, params=res["strategy"]["params"],
                         start_date=req.start, end_date=req.end, metrics=clean(res["metrics"])))

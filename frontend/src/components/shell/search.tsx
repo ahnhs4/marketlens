@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { api } from "@/lib/api";
+import { STATIC, loadManifest } from "@/lib/static";
 
 interface Match { symbol: string; name: string; name_ko?: string | null; exchange?: string | null; market?: string | null }
 
@@ -34,6 +35,12 @@ export function SearchCommand() {
     const t = setTimeout(async () => {
       setLoading(true);
       try {
+        if (STATIC) {   // the demo can only open the stocks it has a snapshot of
+          const m = await loadManifest();
+          const n = q.trim().toLowerCase().replace(/\s/g, "");
+          setResults(m.tickers.filter((t) => [t.symbol, t.name, t.name_ko ?? ""].some((x) => x.toLowerCase().replace(/\s/g, "").includes(n))).slice(0, 10));
+          return;
+        }
         const r = await api<{ results: Match[] }>(`/api/search?q=${encodeURIComponent(q)}&limit=10`, { signal: ctl.signal });
         setResults(r.results);
       } catch {

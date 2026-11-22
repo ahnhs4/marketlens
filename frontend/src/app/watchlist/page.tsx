@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "cn";
-import { ArrowDownUp, Plus, Trash2, X } from "lucide-react";
+import { ArrowDownUp, Grid3x3, Plus, Trash2, X } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -49,7 +49,8 @@ export default function WatchlistPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="관심종목" description="시세와 기술적 · 매크로 점수. 점수는 최신 스캔 결과를 쓰고, 없으면 즉시 계산합니다." />
+      <PageHeader title="관심종목" description="시세와 기술적 · 매크로 점수. 점수는 최신 스캔 결과를 쓰고, 없으면 즉시 계산합니다."
+        right={<Link href="/matrix" className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs text-muted-foreground hover:border-gold/40 hover:text-foreground"><Grid3x3 className="size-3.5" />신호 매트릭스</Link>} />
       <QueryState q={lists} label="관심종목">
         {(ls) => (
           <div className="flex flex-wrap items-center gap-2">

@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { api } from "./api";
+import { STATIC, loadManifest } from "./static";
 import type { Analogs, ChartData, NewsResponse, Overview, Regime, RsiPeriods, Scores, Snapshot, Technical } from "./types";
 
 // Stock page: separate queries load progressively (quote -> chart -> technicals -> the rest),
@@ -43,3 +44,9 @@ export const useRegime = () =>
 
 export const useMarketNews = () =>
   useQuery({ queryKey: ["marketnews"], queryFn: () => api<NewsResponse>("/api/news/market"), staleTime: 300_000, refetchInterval: 600_000 });
+
+/** Watchlist-based views: the app reads the user's own list; the public demo names the demo tickers explicitly (never the real watchlist). */
+export function useScope() {
+  const m = useQuery({ queryKey: ["manifest"], queryFn: loadManifest, staleTime: Infinity, enabled: STATIC });
+  return { ready: !STATIC || !!m.data, qs: STATIC && m.data ? `?symbols=${m.data.tickers.map((t) => t.symbol).join(",")}` : "" };
+}
