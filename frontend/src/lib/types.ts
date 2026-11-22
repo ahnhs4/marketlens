@@ -334,7 +334,7 @@ export interface Scores {
     group?: { group: string; score: number; contributions: { factor: string; move: string; points: number; evidence: string }[] } | null;
     regime?: { label: string; score: number; quadrant: string };
   };
-  fundamental_detail: { score: Num; band: string | null; pillars: Record<string, { score: Num; items: { field: string; label: string; value: number; score: number }[] }>; missing: string[] };
+  fundamental_detail: { score: Num; band: string | null; pillars: Record<string, { score: Num; items: { field: string; label: string; value: number; score: number }[] }>; missing: string[]; reason?: string | null };
   horizons: { short: Horizon; medium: Horizon; long: Horizon };
   change: { from_date: string; to_date: string; technical: [Num, Num]; macro: [Num, Num]; signal: [string | null, string | null]; drivers: { component: string; from: number; to: number }[] } | null;
   as_of: string;

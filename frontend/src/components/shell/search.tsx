@@ -16,7 +16,12 @@ export function SearchCommand() {
   const [q, setQ] = useState("");
   const [results, setResults] = useState<Match[]>([]);
   const [loading, setLoading] = useState(false);
+  const [demo, setDemo] = useState<Match[]>([]);   // static demo: every stock it carries, listed before typing
   const router = useRouter();
+
+  useEffect(() => {
+    if (STATIC && open && !demo.length) loadManifest().then((m) => setDemo(m.tickers)).catch(() => {});
+  }, [open, demo.length]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -55,7 +60,7 @@ export function SearchCommand() {
     };
   }, [q]);
 
-  const shown = q.trim() ? results : [];
+  const shown = q.trim() ? results : STATIC ? demo : [];
   const go = (sym: string) => {
     setOpen(false);
     setQ("");
@@ -77,12 +82,15 @@ export function SearchCommand() {
           <Command shouldFilter={false}>
             <CommandInput placeholder="종목명, 티커 또는 종목코드" value={q} onValueChange={setQ} autoFocus
               onKeyDown={(e) => {
-                if (e.key === "Enter" && shown.length === 0 && q.trim()) go(q.trim().toUpperCase());
+                // the demo has no page for a stock it does not carry (GitHub Pages would answer 404)
+                if (e.key === "Enter" && shown.length === 0 && q.trim() && !STATIC) go(q.trim().toUpperCase());
               }} />
             <CommandList className="max-h-80">
-              {q && !loading && <CommandEmpty>일치하는 종목이 없습니다. Enter를 누르면 “{q.toUpperCase()}”로 조회합니다.</CommandEmpty>}
+              {q && !loading && (STATIC
+                ? <CommandEmpty>데모에 없는 종목입니다: “{q.toUpperCase()}”. 데모는 미리 저장해 둔 {demo.length || ""}개 종목만 보여 줍니다.</CommandEmpty>
+                : <CommandEmpty>일치하는 종목이 없습니다. Enter를 누르면 “{q.toUpperCase()}”로 조회합니다.</CommandEmpty>)}
               {shown.length > 0 && (
-                <CommandGroup heading="종목">
+                <CommandGroup heading={STATIC && !q.trim() ? `데모에 들어 있는 종목 ${demo.length}개` : "종목"}>
                   {shown.map((r) => (
                     <CommandItem key={r.symbol} value={r.symbol} onSelect={() => go(r.symbol)} className="flex items-center gap-3">
                       <span className="w-24 shrink-0 font-mono text-xs font-semibold">{r.symbol}</span>

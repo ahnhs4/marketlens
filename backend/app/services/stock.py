@@ -328,14 +328,24 @@ def fundamental(symbol: str, p: dict | None = None) -> dict:
         if d:
             return {**d, "source": "OpenDART"}
     p = p if p is not None else profile(symbol)
+    return {**_fund_score(p), "source": "Yahoo Finance"}
+
+
+FUNDS = ("ETF", "MUTUALFUND")
+
+
+def _fund_score(p: dict) -> dict:
+    """No company score for a fund: Yahoo's P/E for an ETF is its holdings' aggregate, not a balance sheet."""
+    if p.get("quote_type") in FUNDS:
+        return {"score": None, "band": None, "pillars": {}, "missing": [], "reason": "ETF·펀드는 기업 재무 점수가 없습니다"}
     f = p.get("fundamentals") or {}
-    return {**fa.fundamental_score(f), "source": "Yahoo Finance"} if f else {"score": None}
+    return fa.fundamental_score(f) if f else {"score": None}
 
 
 def fundamentals_detail(symbol: str) -> dict:
     p = profile(symbol)
     f = p.get("fundamentals") or {}
-    score = fa.fundamental_score(f) if f else {"score": None}
+    score = _fund_score(p)
     earnings = cached(f"earnings:{symbol}", 12 * 3600, lambda: yahoo.earnings(symbol, limit=40))
     _persist_earnings(symbol, earnings)
     pe_hist = None

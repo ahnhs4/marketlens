@@ -42,7 +42,7 @@ export function ScoreStrip({ scores, tech, loading }: { scores?: Scores; tech?: 
         sub={mac?.regime ? `${regimeKo(mac.regime.label)} · ${quadrantKo(mac.regime.quadrant)}` : scores ? "데이터 없음" : "계산 중…"} />
       <ScoreTile label="펀더멘털 점수" score={scores?.fundamental} band={fund?.band}
         why={fundComponents.length ? <WhyButton components={fundComponents} title="펀더멘털 항목별 점수" formula="밸류에이션 30% · 성장성 25% · 수익성 30% · 재무 건전성 15% (없는 지표는 제외)" /> : undefined}
-        sub={fund?.missing?.length ? `${fund.missing.length}개 지표 데이터 없음` : undefined} />
+        sub={fund?.reason ?? (fund?.missing?.length ? `${fund.missing.length}개 지표 데이터 없음` : undefined)} />
     </div>
   );
 }

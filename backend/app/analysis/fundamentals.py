@@ -64,6 +64,7 @@ RULES = {
                       ("current_ratio", "유동비율", 0.8, 2.0)],
 }
 PILLAR_WEIGHTS = {"valuation": 0.30, "growth": 0.25, "quality": 0.30, "balance_sheet": 0.15}
+MIN_FIGURES = 3   # one or two numbers are not a fundamental picture (an ETF's only figure is its holdings' P/E)
 
 
 def fundamental_score(f: dict) -> dict:
@@ -80,8 +81,10 @@ def fundamental_score(f: dict) -> dict:
         pillars[pillar] = {"score": round(float(np.mean([i["score"] for i in items])), 1) if items else None,
                            "items": items}
     avail = {k: v["score"] for k, v in pillars.items() if v["score"] is not None}
-    if not avail:
-        return {"score": None, "pillars": pillars, "missing": missing, "band": None}
+    n = sum(len(v["items"]) for v in pillars.values())
+    if n < MIN_FIGURES:
+        return {"score": None, "pillars": pillars, "missing": missing, "band": None,
+                "reason": f"지표가 {n}개뿐이라 점수를 내지 않습니다" if n else None}
     tw = sum(PILLAR_WEIGHTS[k] for k in avail)
     score = sum(PILLAR_WEIGHTS[k] * s for k, s in avail.items()) / tw
     return {"score": round(score, 1), "band": band(score), "pillars": pillars, "missing": missing,

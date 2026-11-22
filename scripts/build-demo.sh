@@ -23,4 +23,5 @@ python3 portfolio-site/check_public.py            # again, now including the bui
 mkdir -p "$SITE"
 rsync -a --delete --exclude '*.py' --exclude '__pycache__' --exclude 'og-card.html' --exclude 'ideas-data.js' --exclude '.DS_Store' --exclude 'marketlens/' portfolio-site/ "$SITE/"
 rsync -a --delete frontend/out-static/ "$SITE/marketlens/"
+cp frontend/out-static/404.html "$SITE/404.html"   # GitHub Pages answers every missing path (a stock the demo lacks) with the root 404.html
 echo "ready: $SITE ($(du -sh "$SITE" | cut -f1)) - not uploaded"
