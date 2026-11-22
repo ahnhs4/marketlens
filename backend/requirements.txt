@@ -1,0 +1,24 @@
+# Top-level runtime dependencies (exact versions verified in development; see requirements.lock.txt for the full set)
+fastapi
+uvicorn[standard]
+pandas
+numpy
+scipy
+sqlalchemy
+alembic
+apscheduler
+httpx
+yfinance
+anthropic
+pydantic
+pydantic-settings
+redis
+feedparser
+lxml
+beautifulsoup4
+itsdangerous
+email-validator
+exchange_calendars
+psycopg[binary]
+pytest
+ruff

@@ -1,0 +1,16 @@
+.env
+backend/.venv/
+backend/data/
+frontend/node_modules/
+frontend/.next/
+__pycache__/
+.tools/
+var/
+.claude/
+.sync/
+.DS_Store
+*.db
+*.db-journal
+*.pkl
+.env.*
+!.env.example
