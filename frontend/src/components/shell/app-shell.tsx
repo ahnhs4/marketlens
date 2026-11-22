@@ -14,6 +14,7 @@ import { api } from "@/lib/api";
 import { BASE, type Manifest, PRIVATE_ROUTES, STATIC, loadManifest } from "@/lib/static";
 import type { SessionStatus } from "@/lib/types";
 
+import { DemoIntro } from "./demo-intro";
 import { SearchCommand } from "./search";
 
 type NavItem = { href: string; label: string; icon: typeof Bell };
@@ -154,13 +155,18 @@ function ThemeToggle() {
   );
 }
 
-/** Static demo only: a slim bar saying what this is, with the way back to the owner's profile page. */
-function DemoBar({ asOf }: { asOf?: string }) {
+/** Static demo only: a slim bar saying what this is, the intro popup behind it, and the way back to the owner's profile page. */
+function DemoBar({ asOf, count }: { asOf?: string; count: number }) {
   const profile = BASE.replace(/\/[^/]*$/, "/") || "/";
+  const [intro, setIntro] = useState(false);
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gold/25 bg-gold/[0.07] px-4 py-2 text-[12px] sm:px-8">
       <span className="text-muted-foreground"><b className="font-semibold text-gold">MarketLens 데모</b> · {asOf ?? "—"} 기준 실데이터 스냅샷 · 읽기 전용 (실제 앱과 같은 화면)</span>
-      <a href={profile} className="rounded-full border border-gold/40 px-3 py-1 font-medium text-gold hover:bg-gold/10">← 안현수 프로필</a>
+      <span className="flex items-center gap-2">
+        <button type="button" onClick={() => setIntro(true)} className="rounded-full px-3 py-1 font-medium text-gold hover:bg-gold/10">데모 안내</button>
+        <a href={profile} className="rounded-full border border-gold/40 px-3 py-1 font-medium text-gold hover:bg-gold/10">← 안현수 프로필</a>
+      </span>
+      <DemoIntro asOf={asOf} count={count} profile={profile} open={intro} onOpenChange={setIntro} />
     </div>
   );
 }
@@ -223,7 +229,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </SheetContent>
       </Sheet>
       <div className="flex min-w-0 flex-1 flex-col">
-        {STATIC && <DemoBar asOf={man?.as_of} />}
+        {STATIC && <DemoBar asOf={man?.as_of} count={man?.tickers.length ?? 0} />}
         <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border/60 bg-background/70 px-4 backdrop-blur-xl backdrop-saturate-150 sm:px-8">
           <button className="grid size-9 place-items-center rounded-full border lg:hidden" onClick={() => setMobile(true)} aria-label="메뉴 열기"><Menu className="size-[18px]" /></button>
           <div className="min-w-0 flex-1"><SearchCommand /></div>
